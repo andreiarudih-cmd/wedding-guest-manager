@@ -1,12 +1,16 @@
 {
-  "name": "wedding-guest-manager",
+  "name": "wedding-guest-system",
   "version": "1.0.0",
-  "description": "Wedding Guest Management System",
+  "description": "Sistema completo de gestão de convidados para casamentos com QR Code",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "node server.js"
   },
+  "keywords": ["wedding", "casamento", "qrcode", "checkin", "rsvp"],
+  "author": "",
+  "license": "MIT",
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=14.0.0"
   }
 }

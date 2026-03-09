@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin · Gestão de Convidados</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Jost:wght@200;300;400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --cream: #f8f4ef;
+    --warm: #ede8e0;
+    --blush: #d4a5a0;
+    --rose: #b87a74;
+    --gold: #c9a96e;
+    --dark: #2c2420;
+    --mid: #6b5a54;
+    --light: #9e8c85;
+    --green: #5a8a6a;
+    --sidebar: #241c19;
+  }
+  body {
+    font-family: 'Jost', sans-serif;
+    background: #1e1611;
+    color: var(--cream);
+    font-weight: 300;
+    min-height: 100vh;
+  }
+
+  /* ─── LAYOUT ─── */
+  .app { display: flex; min-height: 100vh; }
+
+  /* ─── SIDEBAR ─── */
+  .sidebar {
+    width: 240px;
+    background: var(--sidebar);
+    border-right: 1px solid rgba(201,169,110,0.1);
+    padding: 2rem 0;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .sidebar-logo {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.4rem;
+    font-style: italic;
+    color: var(--blush);
+    text-align: center;
+    padding: 0 1.5rem 2rem;
+    border-bottom: 1px solid rgba(201,169,110,0.1);
+    margin-bottom: 1.5rem;
+    display: block;
+    text-decoration: none;
+  }
+  .sidebar-label {
+    font-size: 0.55rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--gold);
+    padding: 0 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.8rem 1.5rem;
+    color: var(--light);
+    text-decoration: none;
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+  }
+  .nav-item:hover, .nav-item.active {
+    background: rgba(201,169,110,0.08);
+    color: var(--gold);
+  }
+  .nav-item .icon { font-size: 1rem; }
+
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 1.5rem;
+    border-top: 1px solid rgba(201,169,110,0.1);
+  }
+  .sidebar-footer a {
+    color: var(--light);
+    text-decoration: none;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    display: block;
+    margin-bottom: 0.4rem;
+    transition: color 0.2s;
+  }
+  .sidebar-footer a:hover { color: var(--gold); }
+
+  /* ─── MAIN ─── */
+  .content {
+    flex: 1;
+    padding: 2rem 2.5rem;
+    overflow-x: auto;
+  }
+
+  .page { display: none; }
+  .page.active { display: block; }
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .page-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    font-weight: 300;
+  }
+  .page-title em { font-style: italic; color: var(--blush); }
+
+  /* ─── STATS ─── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  .stat-card {
+    padding: 1.5rem;
+    border: 1px solid rgba(201,169,110,0.15);
+    background: rgba(255,255,255,0.02);
+  }
+  .stat-card .num {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 3rem;
+    font-weight: 300;
+    line-height: 1;
+    color: var(--blush);
+    display: block;
+  }
+  .stat-card .lbl {
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--light);
+    margin-top: 0.5rem;
+  }
+  .stat-card.highlight .num { color: var(--gold); }
+  .stat-card.green .num { color: #7bb88a; }
+
+  /* ─── TABLE ─── */
+  .table-controls {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .search-input {
+    flex: 1;
+    min-width: 200px;
+    padding: 0.7rem 1rem;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(201,169,110,0.2);
+    color: var(--cream);
+    font-family: 'Jost', sans-serif;
+    font-size: 0.85rem;
+    outline: none;
+  }
+  .search-input:focus { border-color: var(--gold); }
+  .search-input::placeholder { color: var(--light); }
+
+  .filter-btns { display: flex; gap: 0.5rem; }
+  .filter-btn {
+    padding: 0.6rem 1rem;
+    border: 1px solid rgba(201,169,110,0.2);
+    background: none;
+    color: var(--light);
+    font-family: 'Jost', sans-serif;
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .filter-btn:hover, .filter-btn.active {
+    border-color: var(--gold);
+    color: var(--gold);
+  }
+
+  .table-wrap { overflow-x: auto; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+  }
+  th {
+    font-size: 0.55rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    font-weight: 400;
+    padding: 0.8rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid rgba(201,169,110,0.15);
+    white-space: nowrap;
+  }
+  td {
+    padding: 0.9rem 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    color: var(--cream);
+    vertical-align: middle;
+  }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .badge {
+    display: inline-block;
+    padding: 0.2rem 0.7rem;
+    font-size: 0.58rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border-radius: 20px;
+  }
+  .badge-green { background: rgba(90,138,106,0.2); color: #7bb88a; }
+  .badge-gold  { background: rgba(201,169,110,0.15); color: var(--gold); }
+  .badge-gray  { background: rgba(255,255,255,0.05); color: var(--light); }
+
+  .action-btn {
+    background: none;
+    border: 1px solid rgba(201,169,110,0.2);
+    color: var(--light);
+    padding: 0.3rem 0.7rem;
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-right: 0.3rem;
+  }
+  .action-btn:hover { border-color: var(--gold); color: var(--gold); }
+  .action-btn.danger:hover { border-color: var(--rose); color: var(--rose); }
+
+  /* ─── ADD GUEST ─── */
+  .add-form {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(201,169,110,0.15);
+    padding: 2rem;
+    margin-bottom: 2rem;
+  }
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.2rem;
+    margin-bottom: 1.5rem;
+  }
+  .form-field label {
+    display: block;
+    font-size: 0.58rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 0.5rem;
+  }
+  .form-field input, .form-field select, .form-field textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(201,169,110,0.2);
+    color: var(--cream);
+    font-family: 'Jost', sans-serif;
+    font-size: 0.85rem;
+    outline: none;
+    transition: border-color 0.3s;
+  }
+  .form-field input:focus, .form-field select:focus { border-color: var(--gold); }
+  .form-field input::placeholder { color: var(--light); }
+  .form-field select option { background: var(--dark); }
+
+  /* ─── BUTTONS ─── */
+  .btn-primary {
+    padding: 0.8rem 2rem;
+    background: var(--rose);
+    border: none;
+    color: white;
+    font-family: 'Jost', sans-serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+  .btn-primary:hover { background: #a06860; }
+  .btn-outline {
+    padding: 0.8rem 2rem;
+    background: none;
+    border: 1px solid rgba(201,169,110,0.3);
+    color: var(--gold);
+    font-family: 'Jost', sans-serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-decoration: none;
+    display: inline-block;
+  }
+  .btn-outline:hover { background: rgba(201,169,110,0.1); }
+
+  /* ─── QR MODAL ─── */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 999;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--sidebar);
+    border: 1px solid rgba(201,169,110,0.2);
+    padding: 2.5rem;
+    max-width: 340px;
+    width: 100%;
+    text-align: center;
+    animation: fadeIn 0.3s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+
+  .modal h3 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.4rem;
+    font-style: italic;
+    color: var(--blush);
+    margin-bottom: 0.3rem;
+  }
+  .modal .modal-sub {
+    font-size: 0.75rem;
+    color: var(--light);
+    margin-bottom: 1.5rem;
+  }
+  .modal canvas { margin: 0 auto; display: block !important; }
+  .modal-actions { display: flex; gap: 0.8rem; justify-content: center; margin-top: 1.5rem; }
+
+  /* ─── EVENT SETTINGS ─── */
+  .settings-form {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(201,169,110,0.15);
+    padding: 2rem;
+    max-width: 600px;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--light);
+  }
+  .empty-state svg { opacity: 0.2; margin-bottom: 1rem; }
+  .empty-state p { font-size: 0.85rem; }
+
+  /* ─── PROGRESS BAR ─── */
+  .progress-bar {
+    height: 4px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 2px;
+    margin: 1rem 0;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(to right, var(--rose), var(--gold));
+    border-radius: 2px;
+    transition: width 0.6s ease;
+  }
+
+  /* Mobile */
+  @media (max-width: 768px) {
+    .sidebar { display: none; }
+    .content { padding: 1rem 1.2rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <a class="sidebar-logo" href="/">Ana & Bruno</a>
+    <div class="sidebar-label">Gestão</div>
+    <button class="nav-item active" onclick="showPage('dashboard')">
+      <span class="icon">📊</span> Dashboard
+    </button>
+    <button class="nav-item" onclick="showPage('guests')">
+      <span class="icon">👥</span> Convidados
+    </button>
+    <button class="nav-item" onclick="showPage('add-guest')">
+      <span class="icon">➕</span> Adicionar
+    </button>
+    <button class="nav-item" onclick="showPage('settings')">
+      <span class="icon">⚙️</span> Configurações
+    </button>
+    <div class="sidebar-footer">
+      <a href="/checkin">📷 Tela de Check-in</a>
+      <a href="/rsvp">📋 Formulário RSVP</a>
+      <a href="/">🏠 Site do Evento</a>
+    </div>
+  </aside>
+
+  <!-- CONTENT -->
+  <main class="content">
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <h2 class="page-title">Painel <em>Geral</em></h2>
+        <div style="display:flex; gap:0.8rem; flex-wrap:wrap;">
+          <button class="btn-outline" onclick="exportCSV()">⬇ Exportar CSV</button>
+          <button class="btn-outline" onclick="generateAllQRs()">📄 Gerar Todos QRs</button>
+          <button class="btn-outline" onclick="loadAll()">↻ Atualizar</button>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="num" id="dash-total">--</span>
+          <div class="lbl">Total Convidados</div>
+        </div>
+        <div class="stat-card highlight">
+          <span class="num" id="dash-confirmed">--</span>
+          <div class="lbl">Confirmados</div>
+        </div>
+        <div class="stat-card green">
+          <span class="num" id="dash-checkin">--</span>
+          <div class="lbl">Presentes</div>
+        </div>
+        <div class="stat-card">
+          <span class="num" id="dash-absent">--</span>
+          <div class="lbl">Não Compareceram</div>
+        </div>
+        <div class="stat-card">
+          <span class="num" id="dash-people">--</span>
+          <div class="lbl">Total de Pessoas</div>
+        </div>
+        <div class="stat-card green">
+          <span class="num" id="dash-people-in">--</span>
+          <div class="lbl">Pessoas Presentes</div>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 0.5rem; font-size: 0.65rem; letter-spacing: 0.1em; color: var(--light); text-transform: uppercase;">
+        Presença: <span id="dash-pct">0%</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="dash-progress" style="width: 0%"></div>
+      </div>
+
+      <div style="margin-top: 2rem;">
+        <h3 style="font-family: Cormorant Garamond, serif; font-size: 1.5rem; font-weight: 300; margin-bottom: 1rem; color: var(--blush);">Últimas entradas</h3>
+        <div id="recent-checkins"></div>
+      </div>
+    </div>
+
+    <!-- GUESTS -->
+    <div class="page" id="page-guests">
+      <div class="page-header">
+        <h2 class="page-title"><em>Convidados</em></h2>
+        <button class="btn-outline" onclick="exportCSV()">⬇ Exportar CSV</button>
+      </div>
+
+      <div class="table-controls">
+        <input class="search-input" id="search-input" placeholder="Buscar convidado..." oninput="filterGuests()">
+        <div class="filter-btns">
+          <button class="filter-btn active" onclick="setFilter('all', this)">Todos</button>
+          <button class="filter-btn" onclick="setFilter('confirmed', this)">Confirmados</button>
+          <button class="filter-btn" onclick="setFilter('checkin', this)">Presentes</button>
+          <button class="filter-btn" onclick="setFilter('absent', this)">Ausentes</button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Telefone</th>
+              <th>Acomp.</th>
+              <th>Restrição</th>
+              <th>Confirmado</th>
+              <th>Check-in</th>
+              <th>Horário</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="guests-tbody"></tbody>
+        </table>
+      </div>
+      <div id="guests-empty" class="empty-state" style="display:none">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <p>Nenhum convidado encontrado</p>
+      </div>
+    </div>
+
+    <!-- ADD GUEST -->
+    <div class="page" id="page-add-guest">
+      <div class="page-header">
+        <h2 class="page-title">Adicionar <em>Convidado</em></h2>
+      </div>
+      <div class="add-form">
+        <div class="form-grid">
+          <div class="form-field">
+            <label>Nome completo *</label>
+            <input type="text" id="add-name" placeholder="Nome do convidado">
+          </div>
+          <div class="form-field">
+            <label>Telefone *</label>
+            <input type="tel" id="add-phone" placeholder="(11) 99999-9999">
+          </div>
+          <div class="form-field">
+            <label>Acompanhantes</label>
+            <select id="add-companions">
+              <option value="0">Sem acompanhantes</option>
+              <option value="1">1 acompanhante</option>
+              <option value="2">2 acompanhantes</option>
+              <option value="3">3 acompanhantes</option>
+              <option value="4">4 acompanhantes</option>
+              <option value="5">5 acompanhantes</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>Restrição alimentar</label>
+            <input type="text" id="add-dietary" placeholder="Opcional">
+          </div>
+        </div>
+        <div style="display:flex; gap:1rem; flex-wrap:wrap;">
+          <button class="btn-primary" onclick="addGuest()">Cadastrar Convidado</button>
+          <button class="btn-outline" onclick="addGuestAndQR()">Cadastrar + Gerar QR</button>
+        </div>
+        <div id="add-success" style="display:none; margin-top:1rem; padding:1rem; background:rgba(90,138,106,0.1); border: 1px solid rgba(90,138,106,0.3); color: #7bb88a; font-size: 0.8rem;"></div>
+        <div id="add-error" style="display:none; margin-top:1rem; padding:1rem; background:rgba(184,116,116,0.1); border: 1px solid rgba(184,116,116,0.3); color: var(--rose); font-size: 0.8rem;"></div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="page" id="page-settings">
+      <div class="page-header">
+        <h2 class="page-title"><em>Configurações</em> do Evento</h2>
+      </div>
+      <div class="settings-form">
+        <div class="form-grid">
+          <div class="form-field">
+            <label>Nome do Evento</label>
+            <input type="text" id="set-name" placeholder="Ex: Casamento Ana & Bruno">
+          </div>
+          <div class="form-field">
+            <label>Data</label>
+            <input type="date" id="set-date">
+          </div>
+          <div class="form-field">
+            <label>Horário</label>
+            <input type="time" id="set-time">
+          </div>
+          <div class="form-field">
+            <label>Local (Nome)</label>
+            <input type="text" id="set-location" placeholder="Ex: Espaço Villa Jardim">
+          </div>
+          <div class="form-field" style="grid-column: 1/-1">
+            <label>Endereço Completo</label>
+            <input type="text" id="set-address" placeholder="Ex: Rua das Flores, 123 - São Paulo, SP">
+          </div>
+          <div class="form-field" style="grid-column: 1/-1">
+            <label>Link Google Maps</label>
+            <input type="url" id="set-maps" placeholder="https://maps.google.com/...">
+          </div>
+          <div class="form-field" style="grid-column: 1/-1">
+            <label>Nossa História</label>
+            <textarea id="set-story" style="min-height:100px; background:rgba(255,255,255,0.04); border:1px solid rgba(201,169,110,0.2); color:var(--cream); font-family:Jost,sans-serif; padding:0.75rem 1rem; width:100%; outline:none; resize:vertical;"></textarea>
+          </div>
+        </div>
+        <button class="btn-primary" onclick="saveSettings()">Salvar Configurações</button>
+        <div id="set-msg" style="display:none; margin-top:1rem; font-size:0.8rem;"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- QR MODAL -->
+<div class="modal-overlay" id="qr-modal">
+  <div class="modal">
+    <h3 id="modal-name">Nome</h3>
+    <p class="modal-sub" id="modal-sub">ID do convidado</p>
+    <canvas id="modal-qr-canvas"></canvas>
+    <div class="modal-actions">
+      <button class="btn-outline" onclick="downloadModalQR()">⬇ Baixar</button>
+      <button class="btn-outline" onclick="closeModal()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let allGuests = [];
+let currentFilter = 'all';
+let currentModalGuest = null;
+
+// ─── NAV ─────────────────────────────────────────────────────────
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  event?.currentTarget?.classList.add('active');
+  if (id === 'dashboard') loadStats();
+  if (id === 'guests') loadGuests();
+  if (id === 'settings') loadSettings();
+}
+
+// ─── LOAD DATA ────────────────────────────────────────────────────
+async function loadAll() { await loadStats(); await loadGuests(); }
+
+async function loadStats() {
+  const s = await fetchJSON('/api/stats');
+  if (!s) return;
+  document.getElementById('dash-total').textContent = s.total;
+  document.getElementById('dash-confirmed').textContent = s.confirmed;
+  document.getElementById('dash-checkin').textContent = s.checkedIn;
+  document.getElementById('dash-absent').textContent = s.notShown;
+  document.getElementById('dash-people').textContent = s.totalPeople;
+  document.getElementById('dash-people-in').textContent = s.checkedInPeople;
+  const pct = s.confirmed > 0 ? Math.round((s.checkedIn / s.confirmed) * 100) : 0;
+  document.getElementById('dash-pct').textContent = pct + '%';
+  document.getElementById('dash-progress').style.width = pct + '%';
+
+  // Recent checkins
+  if (allGuests.length === 0) await loadGuests();
+  const recent = allGuests.filter(g => g.checkin).sort((a,b) => (b.checkinTime||'').localeCompare(a.checkinTime||'')).slice(0,5);
+  const container = document.getElementById('recent-checkins');
+  if (!recent.length) {
+    container.innerHTML = '<p style="color:var(--light); font-size:0.8rem;">Nenhum check-in ainda.</p>';
+  } else {
+    container.innerHTML = recent.map(g => `
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:0.8rem 0; border-bottom:1px solid rgba(255,255,255,0.04);">
+        <div>
+          <div style="font-size:0.9rem;">${g.name}</div>
+          <div style="font-size:0.7rem; color:var(--light);">+ ${g.companions} acomp.</div>
+        </div>
+        <div style="font-size:0.72rem; color:var(--gold);">${g.checkinTime || ''}</div>
+      </div>
+    `).join('');
+  }
+}
+
+async function loadGuests() {
+  const guests = await fetchJSON('/api/guests');
+  if (!guests) return;
+  allGuests = guests;
+  renderGuests();
+}
+
+async function loadSettings() {
+  const ev = await fetchJSON('/api/event');
+  if (!ev) return;
+  document.getElementById('set-name').value = ev.name || '';
+  document.getElementById('set-date').value = ev.date || '';
+  document.getElementById('set-time').value = ev.time || '';
+  document.getElementById('set-location').value = ev.location || '';
+  document.getElementById('set-address').value = ev.address || '';
+  document.getElementById('set-maps').value = ev.mapsUrl || '';
+  document.getElementById('set-story').value = ev.story || '';
+}
+
+async function saveSettings() {
+  const body = {
+    name: document.getElementById('set-name').value,
+    date: document.getElementById('set-date').value,
+    time: document.getElementById('set-time').value,
+    location: document.getElementById('set-location').value,
+    address: document.getElementById('set-address').value,
+    mapsUrl: document.getElementById('set-maps').value,
+    story: document.getElementById('set-story').value,
+  };
+  const res = await fetch('/api/event', { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  const data = await res.json();
+  const msg = document.getElementById('set-msg');
+  msg.style.display = 'block';
+  if (data.ok) {
+    msg.style.color = '#7bb88a';
+    msg.textContent = '✓ Configurações salvas com sucesso!';
+  } else {
+    msg.style.color = 'var(--rose)';
+    msg.textContent = '✕ Erro ao salvar.';
+  }
+}
+
+// ─── RENDER GUESTS ────────────────────────────────────────────────
+function renderGuests() {
+  const search = document.getElementById('search-input')?.value.toLowerCase() || '';
+  let filtered = allGuests.filter(g => {
+    const matchSearch = g.name.toLowerCase().includes(search) || g.phone.includes(search);
+    const matchFilter = currentFilter === 'all' ? true
+      : currentFilter === 'confirmed' ? g.confirmed
+      : currentFilter === 'checkin' ? g.checkin
+      : currentFilter === 'absent' ? (g.confirmed && !g.checkin)
+      : true;
+    return matchSearch && matchFilter;
+  });
+
+  const tbody = document.getElementById('guests-tbody');
+  const empty = document.getElementById('guests-empty');
+
+  if (!filtered.length) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = filtered.map(g => `
+    <tr>
+      <td><strong style="font-weight:400">${g.name}</strong></td>
+      <td style="color:var(--light)">${g.phone}</td>
+      <td style="color:var(--light)">${g.companions}</td>
+      <td style="color:var(--light); font-size:0.75rem;">${g.dietary || '—'}</td>
+      <td><span class="badge ${g.confirmed ? 'badge-gold' : 'badge-gray'}">${g.confirmed ? 'Sim' : 'Não'}</span></td>
+      <td><span class="badge ${g.checkin ? 'badge-green' : 'badge-gray'}">${g.checkin ? 'Sim' : 'Não'}</span></td>
+      <td style="color:var(--light); font-size:0.75rem;">${g.checkinTime || '—'}</td>
+      <td>
+        <button class="action-btn" onclick="showQR('${g.id}')">QR</button>
+        ${g.checkin ? `<button class="action-btn" onclick="resetCheckin('${g.id}')">Reset</button>` : ''}
+        <button class="action-btn danger" onclick="deleteGuest('${g.id}', '${g.name.replace(/'/g,"\\'")}')">✕</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function filterGuests() { renderGuests(); }
+
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderGuests();
+}
+
+// ─── ADD GUEST ────────────────────────────────────────────────────
+async function addGuest(showQR = false) {
+  const name = document.getElementById('add-name').value.trim();
+  const phone = document.getElementById('add-phone').value.trim();
+  const companions = document.getElementById('add-companions').value;
+  const dietary = document.getElementById('add-dietary').value.trim();
+
+  const errEl = document.getElementById('add-error');
+  const sucEl = document.getElementById('add-success');
+  errEl.style.display = 'none'; sucEl.style.display = 'none';
+
+  if (!name) { errEl.textContent = 'Nome obrigatório.'; errEl.style.display = 'block'; return null; }
+  if (!phone) { errEl.textContent = 'Telefone obrigatório.'; errEl.style.display = 'block'; return null; }
+
+  const res = await fetch('/api/guests', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({name, phone, companions: parseInt(companions), dietary}) });
+  const data = await res.json();
+
+  if (data.ok) {
+    sucEl.textContent = `✓ Convidado "${name}" adicionado com sucesso!`;
+    sucEl.style.display = 'block';
+    document.getElementById('add-name').value = '';
+    document.getElementById('add-phone').value = '';
+    document.getElementById('add-companions').value = '0';
+    document.getElementById('add-dietary').value = '';
+    allGuests.push(data.guest);
+    return data.guest;
+  } else {
+    errEl.textContent = '✕ ' + (data.error || 'Erro ao adicionar.');
+    errEl.style.display = 'block';
+    return null;
+  }
+}
+
+async function addGuestAndQR() {
+  const guest = await addGuest();
+  if (guest) {
+    setTimeout(() => showQR(guest.id), 300);
+  }
+}
+
+// ─── DELETE ───────────────────────────────────────────────────────
+async function deleteGuest(id, name) {
+  if (!confirm(`Remover "${name}"?`)) return;
+  await fetch('/api/guests/' + id, { method: 'DELETE' });
+  allGuests = allGuests.filter(g => g.id !== id);
+  renderGuests();
+}
+
+// ─── RESET CHECK-IN ───────────────────────────────────────────────
+async function resetCheckin(id) {
+  if (!confirm('Resetar check-in deste convidado?')) return;
+  await fetch(`/api/guests/${id}/reset-checkin`, { method: 'PUT' });
+  const g = allGuests.find(g => g.id === id);
+  if (g) { g.checkin = false; g.checkinTime = null; }
+  renderGuests();
+}
+
+// ─── QR CODE ──────────────────────────────────────────────────────
+function showQR(id) {
+  const guest = allGuests.find(g => g.id === id);
+  if (!guest) return;
+  currentModalGuest = guest;
+
+  document.getElementById('modal-name').textContent = guest.name;
+  document.getElementById('modal-sub').textContent = 'ID: ' + guest.id;
+
+  const canvas = document.getElementById('modal-qr-canvas');
+  const checkinUrl = `${window.location.origin}/checkin?id=${guest.id}`;
+
+  QRCode.toCanvas(canvas, checkinUrl, {
+    width: 240,
+    margin: 2,
+    color: { dark: '#2c2420', light: '#ffffff' },
+    errorCorrectionLevel: 'H'
+  });
+
+  document.getElementById('qr-modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('qr-modal').classList.remove('open');
+  currentModalGuest = null;
+}
+
+document.getElementById('qr-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+function downloadModalQR() {
+  if (!currentModalGuest) return;
+  const canvas = document.getElementById('modal-qr-canvas');
+  const dl = document.createElement('canvas');
+  dl.width = 300; dl.height = 340;
+  const ctx = dl.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, 300, 340);
+  ctx.fillStyle = '#2c2420';
+  ctx.font = '300 12px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Ana & Bruno — Casamento', 150, 24);
+  ctx.drawImage(canvas, 30, 35, 240, 240);
+  ctx.fillStyle = '#6b5a54';
+  ctx.font = '13px sans-serif';
+  ctx.fillText(currentModalGuest.name, 150, 295);
+  ctx.fillStyle = '#9e8c85';
+  ctx.font = '10px sans-serif';
+  ctx.fillText('ID: ' + currentModalGuest.id, 150, 315);
+  const link = document.createElement('a');
+  link.download = `qr-${currentModalGuest.name.replace(/\s/g,'-')}.png`;
+  link.href = dl.toDataURL('image/png');
+  link.click();
+}
+
+// ─── GENERATE ALL QRS ─────────────────────────────────────────────
+async function generateAllQRs() {
+  if (!allGuests.length) { alert('Nenhum convidado cadastrado.'); return; }
+
+  // Generate individual QRs and let user download as zip-like (sequential downloads)
+  const confirmed = confirm(`Gerar QR Code para ${allGuests.length} convidado(s)?\n\nOs arquivos serão baixados individualmente.`);
+  if (!confirmed) return;
+
+  for (let i = 0; i < allGuests.length; i++) {
+    const guest = allGuests[i];
+    const canvas = document.createElement('canvas');
+    const url = `${window.location.origin}/checkin?id=${guest.id}`;
+    await new Promise(resolve => {
+      QRCode.toCanvas(canvas, url, { width: 240, margin: 2, color: { dark: '#2c2420', light: '#ffffff' } }, resolve);
+    });
+    const dl = document.createElement('canvas');
+    dl.width = 300; dl.height = 340;
+    const ctx = dl.getContext('2d');
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,300,340);
+    ctx.fillStyle = '#2c2420'; ctx.font = '300 12px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('Ana & Bruno — Casamento', 150, 24);
+    ctx.drawImage(canvas, 30, 35, 240, 240);
+    ctx.fillStyle = '#6b5a54'; ctx.font = '13px sans-serif';
+    ctx.fillText(guest.name, 150, 295);
+    ctx.fillStyle = '#9e8c85'; ctx.font = '10px sans-serif';
+    ctx.fillText('ID: ' + guest.id, 150, 315);
+    const link = document.createElement('a');
+    link.download = `${i+1}-qr-${guest.name.replace(/\s/g,'-')}.png`;
+    link.href = dl.toDataURL('image/png');
+    link.click();
+    await new Promise(r => setTimeout(r, 400));
+  }
+}
+
+// ─── EXPORT ───────────────────────────────────────────────────────
+function exportCSV() {
+  window.location.href = '/api/export';
+}
+
+// ─── UTIL ─────────────────────────────────────────────────────────
+async function fetchJSON(url) {
+  try {
+    const res = await fetch(url);
+    return await res.json();
+  } catch(e) {
+    console.error(e); return null;
+  }
+}
+
+// Init
+loadStats();
+loadGuests();
+</script>
+</body>
+</html>

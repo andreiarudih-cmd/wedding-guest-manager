@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Check-in · Ana & Bruno</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Jost:wght@200;300;400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --cream: #f8f4ef;
+    --warm: #ede8e0;
+    --blush: #d4a5a0;
+    --rose: #b87a74;
+    --gold: #c9a96e;
+    --dark: #2c2420;
+    --mid: #6b5a54;
+    --light: #9e8c85;
+    --green: #5a8a6a;
+    --green-bg: rgba(90,138,106,0.1);
+    --red: #b87474;
+    --red-bg: rgba(184,116,116,0.1);
+  }
+
+  body {
+    font-family: 'Jost', sans-serif;
+    background: var(--dark);
+    color: var(--cream);
+    font-weight: 300;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    text-align: center;
+    padding: 2rem 1.5rem 1.5rem;
+    border-bottom: 1px solid rgba(201,169,110,0.15);
+  }
+  header a {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.5rem;
+    font-style: italic;
+    color: var(--blush);
+    text-decoration: none;
+  }
+  .page-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-top: 0.4rem;
+  }
+
+  main {
+    flex: 1;
+    padding: 2rem 1.5rem 3rem;
+    max-width: 480px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2rem, 6vw, 3rem);
+    font-weight: 300;
+    text-align: center;
+    margin-bottom: 0.5rem;
+  }
+  h1 em { font-style: italic; color: var(--blush); }
+
+  .subtitle {
+    text-align: center;
+    color: var(--light);
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+    margin-bottom: 2.5rem;
+  }
+
+  /* ─── SCANNER ─── */
+  .scanner-container {
+    position: relative;
+    background: #1a110e;
+    border: 1px solid rgba(201,169,110,0.2);
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+  }
+
+  #qr-reader {
+    width: 100%;
+  }
+
+  /* Override html5-qrcode styles */
+  #qr-reader__scan_region { position: relative; }
+  #qr-reader__scan_region video { width: 100% !important; }
+  #qr-reader__scan_region img { display: none !important; }
+
+  .scanner-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .scan-frame {
+    width: 60%;
+    aspect-ratio: 1;
+    border: 2px solid var(--gold);
+    position: relative;
+    box-shadow: 0 0 0 9999px rgba(0,0,0,0.45);
+  }
+  .scan-frame::before, .scan-frame::after {
+    content: '';
+    position: absolute;
+    width: 20px; height: 20px;
+    border-color: var(--gold);
+    border-style: solid;
+  }
+  .scan-frame::before { top: -2px; left: -2px; border-width: 3px 0 0 3px; }
+  .scan-frame::after  { bottom: -2px; right: -2px; border-width: 0 3px 3px 0; }
+
+  .scan-line {
+    position: absolute;
+    left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(to right, transparent, var(--gold), transparent);
+    animation: scanline 2s ease-in-out infinite;
+  }
+  @keyframes scanline {
+    0%   { top: 0; }
+    100% { top: 100%; }
+  }
+
+  /* ─── CONTROLS ─── */
+  .controls {
+    display: flex; gap: 0.8rem; margin-bottom: 1.5rem;
+  }
+  .btn {
+    flex: 1;
+    padding: 0.9rem;
+    border: 1px solid rgba(201,169,110,0.3);
+    background: rgba(255,255,255,0.04);
+    color: var(--cream);
+    font-family: 'Jost', sans-serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  .btn:hover { border-color: var(--gold); background: rgba(201,169,110,0.1); }
+  .btn.primary { background: var(--rose); border-color: var(--rose); }
+  .btn.primary:hover { background: #a06860; }
+  .btn:disabled { opacity: 0.4; cursor: default; }
+
+  /* ─── MANUAL ─── */
+  .manual-input {
+    display: flex; gap: 0.8rem; margin-bottom: 1.5rem;
+  }
+  .manual-input input {
+    flex: 1;
+    padding: 0.9rem 1rem;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(201,169,110,0.3);
+    color: var(--cream);
+    font-family: 'Jost', sans-serif;
+    font-size: 0.85rem;
+    outline: none;
+    transition: border-color 0.3s;
+  }
+  .manual-input input:focus { border-color: var(--gold); }
+  .manual-input input::placeholder { color: var(--light); }
+
+  /* ─── RESULT ─── */
+  .result-card {
+    display: none;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    animation: slideIn 0.4s ease;
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .result-card.success {
+    background: var(--green-bg);
+    border: 1px solid rgba(90,138,106,0.3);
+  }
+  .result-card.duplicate {
+    background: rgba(201,169,110,0.08);
+    border: 1px solid rgba(201,169,110,0.3);
+  }
+  .result-card.error {
+    background: var(--red-bg);
+    border: 1px solid rgba(184,116,116,0.3);
+  }
+
+  .result-icon {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 1rem;
+    font-size: 1.5rem;
+  }
+  .success .result-icon { background: rgba(90,138,106,0.2); }
+  .duplicate .result-icon { background: rgba(201,169,110,0.15); }
+  .error .result-icon { background: rgba(184,116,116,0.15); }
+
+  .result-status {
+    font-size: 0.6rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+  .success .result-status { color: var(--green); }
+  .duplicate .result-status { color: var(--gold); }
+  .error .result-status { color: var(--red); }
+
+  .result-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.8rem;
+    font-weight: 300;
+    margin-bottom: 0.3rem;
+  }
+  .result-details {
+    font-size: 0.78rem;
+    color: var(--light);
+    line-height: 1.6;
+  }
+
+  /* ─── STATS ─── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.8rem;
+    margin-top: 1.5rem;
+  }
+  .stat-box {
+    padding: 1rem;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(201,169,110,0.15);
+    text-align: center;
+  }
+  .stat-num {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.2rem;
+    font-weight: 300;
+    color: var(--blush);
+    line-height: 1;
+    display: block;
+  }
+  .stat-lbl {
+    font-size: 0.58rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--light);
+    margin-top: 0.3rem;
+  }
+
+  .nav-links {
+    display: flex; gap: 1rem; justify-content: center;
+    margin-top: 2rem;
+  }
+  .nav-links a {
+    color: var(--light);
+    text-decoration: none;
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    transition: color 0.3s;
+  }
+  .nav-links a:hover { color: var(--gold); }
+
+  /* ─── URL PARAM AUTO CHECK-IN ─── */
+</style>
+</head>
+<body>
+
+<header>
+  <a href="/">Ana & Bruno</a>
+  <div class="page-label">Check-in · Entrada</div>
+</header>
+
+<main>
+  <h1>Check-<em>in</em></h1>
+  <p class="subtitle">Escaneie o QR Code do convidado</p>
+
+  <div class="scanner-container">
+    <div id="qr-reader"></div>
+    <div class="scanner-overlay">
+      <div class="scan-frame">
+        <div class="scan-line"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn primary" id="start-btn" onclick="startScanner()">▶ Iniciar Câmera</button>
+    <button class="btn" id="stop-btn" onclick="stopScanner()" disabled>■ Parar</button>
+  </div>
+
+  <div class="manual-input">
+    <input type="text" id="manual-id" placeholder="Ou digite o ID manualmente..." autocomplete="off">
+    <button class="btn" onclick="manualCheckin()" style="flex:0; white-space:nowrap; padding: 0.9rem 1.2rem;">Buscar</button>
+  </div>
+
+  <div class="result-card" id="result-card">
+    <div class="result-icon" id="result-icon"></div>
+    <div class="result-status" id="result-status"></div>
+    <div class="result-name" id="result-name"></div>
+    <div class="result-details" id="result-details"></div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-box">
+      <span class="stat-num" id="stat-checkedin">--</span>
+      <div class="stat-lbl">Presentes</div>
+    </div>
+    <div class="stat-box">
+      <span class="stat-num" id="stat-confirmed">--</span>
+      <div class="stat-lbl">Confirmados</div>
+    </div>
+    <div class="stat-box">
+      <span class="stat-num" id="stat-total">--</span>
+      <div class="stat-lbl">Total</div>
+    </div>
+  </div>
+
+  <div class="nav-links">
+    <a href="/admin">→ Painel Admin</a>
+    <a href="/">← Site do Evento</a>
+  </div>
+</main>
+
+<script>
+let scanner = null;
+let scanning = false;
+let lastScanned = null;
+let lastScannedTime = 0;
+
+function startScanner() {
+  if (scanning) return;
+
+  scanner = new Html5Qrcode('qr-reader');
+  const config = {
+    fps: 10,
+    qrbox: { width: 250, height: 250 },
+    aspectRatio: 1.0
+  };
+
+  Html5Qrcode.getCameras().then(cameras => {
+    if (!cameras.length) { showResult('error', '✕', 'Sem câmera', 'Nenhuma câmera encontrada neste dispositivo.'); return; }
+    // Prefer back camera
+    const cam = cameras.find(c => c.label.toLowerCase().includes('back')) || cameras[cameras.length - 1];
+    scanner.start(cam.id, config, onScanSuccess, onScanError).then(() => {
+      scanning = true;
+      document.getElementById('start-btn').disabled = true;
+      document.getElementById('stop-btn').disabled = false;
+    }).catch(err => {
+      showResult('error', '✕', 'Câmera bloqueada', 'Permita o acesso à câmera nas configurações do navegador.');
+    });
+  }).catch(() => {
+    showResult('error', '✕', 'Câmera bloqueada', 'Permita o acesso à câmera nas configurações do navegador.');
+  });
+}
+
+function stopScanner() {
+  if (scanner && scanning) {
+    scanner.stop().then(() => {
+      scanning = false;
+      document.getElementById('start-btn').disabled = false;
+      document.getElementById('stop-btn').disabled = true;
+    });
+  }
+}
+
+function onScanSuccess(decodedText) {
+  const now = Date.now();
+  if (decodedText === lastScanned && now - lastScannedTime < 4000) return;
+  lastScanned = decodedText;
+  lastScannedTime = now;
+
+  // Extract ID from URL or use raw
+  let guestId = decodedText;
+  try {
+    const u = new URL(decodedText);
+    guestId = u.searchParams.get('id') || decodedText;
+  } catch(e) {}
+
+  performCheckin(guestId);
+}
+
+function onScanError() { /* silent */ }
+
+function manualCheckin() {
+  const id = document.getElementById('manual-id').value.trim();
+  if (!id) return;
+  performCheckin(id);
+}
+
+async function performCheckin(id) {
+  try {
+    const res = await fetch('/api/checkin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id })
+    });
+    const data = await res.json();
+
+    if (data.status === 'success') {
+      const g = data.guest;
+      const companions = g.companions > 0 ? `+ ${g.companions} acompanhante${g.companions > 1 ? 's' : ''}` : 'sem acompanhantes';
+      showResult('success', '✓',
+        'Check-in Realizado!',
+        g.name,
+        `${companions}${g.dietary ? ' · ' + g.dietary : ''}<br>Entrada: ${g.checkinTime}`
+      );
+    } else if (data.status === 'duplicate') {
+      const g = data.guest;
+      showResult('duplicate', '!',
+        'Já Registrado',
+        g.name,
+        `Check-in realizado em: ${g.checkinTime}`
+      );
+    } else if (data.status === 'not_found') {
+      showResult('error', '✕', 'Não Encontrado', '', 'QR Code inválido ou convidado não cadastrado.');
+    } else {
+      showResult('error', '✕', 'Erro', '', data.message || 'Erro desconhecido.');
+    }
+    loadStats();
+  } catch(e) {
+    showResult('error', '✕', 'Erro de Conexão', '', 'Verifique a conexão com o servidor.');
+  }
+}
+
+function showResult(type, icon, status, name, details) {
+  const card = document.getElementById('result-card');
+  card.className = 'result-card ' + type;
+  card.style.display = 'block';
+  document.getElementById('result-icon').textContent = icon;
+  document.getElementById('result-status').textContent = status;
+  document.getElementById('result-name').textContent = name || '';
+  document.getElementById('result-details').innerHTML = details || '';
+
+  // Vibrate if available
+  if (type === 'success' && navigator.vibrate) navigator.vibrate([100, 50, 100]);
+  if (type === 'error' && navigator.vibrate) navigator.vibrate(300);
+
+  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+async function loadStats() {
+  try {
+    const res = await fetch('/api/stats');
+    const s = await res.json();
+    document.getElementById('stat-checkedin').textContent = s.checkedIn;
+    document.getElementById('stat-confirmed').textContent = s.confirmed;
+    document.getElementById('stat-total').textContent = s.total;
+  } catch(e) {}
+}
+
+// Auto-detect check-in via URL param (when QR is opened in browser)
+const urlParams = new URLSearchParams(window.location.search);
+const urlId = urlParams.get('id');
+if (urlId) {
+  // Show message and auto-checkin
+  setTimeout(() => performCheckin(urlId), 500);
+}
+
+loadStats();
+setInterval(loadStats, 10000);
+</script>
+</body>
+</html>
