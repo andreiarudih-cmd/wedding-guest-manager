@@ -3,7 +3,6 @@ const fs = require('fs');
 const path = require('path');
 const url = require('url');
 
-// ─── Database (JSON file-based, no dependencies) ───────────────────────────
 const DB_PATH = path.join(__dirname, 'data', 'guests.json');
 
 function readDB() {
@@ -32,7 +31,6 @@ function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
 }
 
-// ─── MIME Types ────────────────────────────────────────────────────────────
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.css':  'text/css',
@@ -44,7 +42,6 @@ const MIME = {
   '.svg':  'image/svg+xml',
 };
 
-// ─── Request Body Parser ───────────────────────────────────────────────────
 function parseBody(req) {
   return new Promise((resolve, reject) => {
     let body = '';
@@ -62,7 +59,6 @@ function json(res, data, status = 200) {
   res.end(JSON.stringify(data));
 }
 
-// ─── CSV Export ────────────────────────────────────────────────────────────
 function generateCSV(guests) {
   const header = 'ID,Nome,Telefone,Acompanhantes,Restrição Alimentar,Confirmado,Check-in,Horário de Entrada\n';
   const rows = guests.map(g =>
@@ -71,27 +67,21 @@ function generateCSV(guests) {
   return header + rows;
 }
 
-// ─── Server ────────────────────────────────────────────────────────────────
 const server = http.createServer(async (req, res) => {
   const parsed = url.parse(req.url, true);
   const pathname = parsed.pathname;
   const method = req.method;
 
-  // CORS preflight
   if (method === 'OPTIONS') {
     res.writeHead(204, { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE', 'Access-Control-Allow-Headers': 'Content-Type' });
     return res.end();
   }
 
-  // ── API Routes ────────────────────────────────────────────────────────────
-
-  // GET /api/event
   if (pathname === '/api/event' && method === 'GET') {
     const db = readDB();
     return json(res, db.event);
   }
 
-  // PUT /api/event
   if (pathname === '/api/event' && method === 'PUT') {
     const body = await parseBody(req);
     const db = readDB();
@@ -100,13 +90,11 @@ const server = http.createServer(async (req, res) => {
     return json(res, { ok: true, event: db.event });
   }
 
-  // GET /api/guests
   if (pathname === '/api/guests' && method === 'GET') {
     const db = readDB();
     return json(res, db.guests);
   }
 
-  // POST /api/guests  — RSVP
   if (pathname === '/api/guests' && method === 'POST') {
     const body = await parseBody(req);
     if (!body.name || !body.phone) return json(res, { error: 'Nome e telefone obrigatórios' }, 400);
@@ -127,7 +115,6 @@ const server = http.createServer(async (req, res) => {
     return json(res, { ok: true, guest });
   }
 
-  // POST /api/checkin
   if (pathname === '/api/checkin' && method === 'POST') {
     const body = await parseBody(req);
     if (!body.id) return json(res, { error: 'ID obrigatório' }, 400);
@@ -141,7 +128,6 @@ const server = http.createServer(async (req, res) => {
     return json(res, { ok: true, status: 'success', message: 'Check-in realizado com sucesso!', guest });
   }
 
-  // DELETE /api/guests/:id
   if (pathname.startsWith('/api/guests/') && method === 'DELETE') {
     const id = pathname.split('/')[3];
     const db = readDB();
@@ -150,7 +136,6 @@ const server = http.createServer(async (req, res) => {
     return json(res, { ok: true });
   }
 
-  // PUT /api/guests/:id/reset-checkin
   if (pathname.startsWith('/api/guests/') && pathname.endsWith('/reset-checkin') && method === 'PUT') {
     const id = pathname.split('/')[3];
     const db = readDB();
@@ -162,7 +147,6 @@ const server = http.createServer(async (req, res) => {
     return json(res, { ok: true, guest });
   }
 
-  // GET /api/stats
   if (pathname === '/api/stats' && method === 'GET') {
     const db = readDB();
     const total = db.guests.length;
@@ -173,7 +157,6 @@ const server = http.createServer(async (req, res) => {
     return json(res, { total, confirmed, checkedIn, notShown: confirmed - checkedIn, totalPeople, checkedInPeople });
   }
 
-  // GET /api/export
   if (pathname === '/api/export' && method === 'GET') {
     const db = readDB();
     const csv = generateCSV(db.guests);
@@ -181,21 +164,20 @@ const server = http.createServer(async (req, res) => {
       'Content-Type': 'text/csv; charset=utf-8',
       'Content-Disposition': 'attachment; filename="convidados.csv"'
     });
-    return res.end('\uFEFF' + csv); // BOM for Excel
+    return res.end('\uFEFF' + csv);
   }
 
-  // ── Static Files ──────────────────────────────────────────────────────────
   let filePath;
   if (pathname === '/' || pathname === '/index.html') {
-    filePath = path.join(__dirname, 'public', 'index.html');
+    filePath = path.join(__dirname, 'index.html');
   } else if (pathname === '/checkin' || pathname === '/checkin.html') {
-    filePath = path.join(__dirname, 'public', 'checkin.html');
+    filePath = path.join(__dirname, 'checkin.html');
   } else if (pathname === '/admin' || pathname === '/admin.html') {
-    filePath = path.join(__dirname, 'public', 'admin.html');
+    filePath = path.join(__dirname, 'admin.html');
   } else if (pathname === '/rsvp' || pathname === '/rsvp.html') {
-    filePath = path.join(__dirname, 'public', 'rsvp.html');
+    filePath = path.join(__dirname, 'rsvp.html');
   } else {
-    filePath = path.join(__dirname, 'public', pathname);
+    filePath = path.join(__dirname, pathname);
   }
 
   fs.readFile(filePath, (err, data) => {
@@ -212,8 +194,8 @@ const server = http.createServer(async (req, res) => {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`\n💒 Sistema de Casamento rodando em http://localhost:${PORT}`);
-  console.log(`   🏠 Site do Evento:  http://localhost:${PORT}/`);
-  console.log(`   📋 RSVP:           http://localhost:${PORT}/rsvp`);
-  console.log(`   📷 Check-in:       http://localhost:${PORT}/checkin`);
-  console.log(`   📊 Admin:          http://localhost:${PORT}/admin\n`);
+  console.log(`   🏠 Site:    http://localhost:${PORT}/`);
+  console.log(`   📋 RSVP:    http://localhost:${PORT}/rsvp`);
+  console.log(`   📷 Check-in: http://localhost:${PORT}/checkin`);
+  console.log(`   📊 Admin:   http://localhost:${PORT}/admin\n`);
 });
